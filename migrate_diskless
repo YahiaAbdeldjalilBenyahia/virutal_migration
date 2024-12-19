@@ -1,0 +1,17 @@
+┌──(kali㉿vmsrc)-[~]
+└─$ sudo cat migrate_diskless2.sh
+#!/bin/bash
+# Configurations
+PAGE_SERVER_IP="192.168.196.20"  # IP address of the target VM acting as the page server
+PAGE_SERVER_PORT="1234"          # Port on which the page server listens
+USER="kali"
+REMOTE_DIR="/home/kali/checkpoint"        # Directory on target VM to store dumped images
+PROCESS_NAME="/home/kali/simple_loop.out" # Process to be dumped
+IMAGE_DIR="/home/kali/checkpoint/diskless"  # Local directory for CRIU images
+# Step 1: Start the page server on the target VM
+echo "Dumping process with page server for $(pidof $PROCESS_NAME)"
+sudo criu dump --tree $(pidof $PROCESS_NAME) --images-dir $IMAGE_DIR --leave-stopped --page-server --address $PAGE_SERVER_IP --port $PAGE_SERVER_PORT --shell-job
+echo "Copying images to destination VM"
+sudo scp -r /home/kali/checkpoint/diskless kali@192.168.196.20:/home/kali/checkpoint
+sudo scp  -r $PROCESS_NAME $USER@$PAGE_SERVER_IP:$REMOTE_DIR
+sudo kill -9 $(pidof $PROCESS_NAME)
